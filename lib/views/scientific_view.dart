@@ -9,6 +9,9 @@ class ScientificView extends StatelessWidget {
   final AngleUnit angleUnit;
   final bool isShift;
   final bool isAlpha;
+  final bool isSto;
+  final bool isRcl;
+  final Map<String, double> memoryRegisters;
   final ValueChanged<String> onButtonPressed;
 
   const ScientificView({
@@ -18,6 +21,9 @@ class ScientificView extends StatelessWidget {
     required this.angleUnit,
     required this.isShift,
     required this.isAlpha,
+    this.isSto = false,
+    this.isRcl = false,
+    required this.memoryRegisters,
     required this.onButtonPressed,
   });
 
@@ -64,41 +70,57 @@ class ScientificView extends StatelessWidget {
           haptic: HapticFeedback.heavyImpact,
         ),
       ],
-      // Row 2: Trigonometric & Power Keys
+      // Row 2: Trigonometric / A, B, C, D
       [
         _KeyConfig(
-          action: isShift ? 'asin(' : 'sin(',
-          primaryLabel: isShift ? 'sin⁻¹' : 'sin',
-          secondaryLabel: 'sin⁻¹',
+          action: isAlpha || isSto || isRcl
+              ? 'A'
+              : (isShift ? 'asin(' : 'sin('),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'A'
+              : (isShift ? 'sin⁻¹' : 'sin'),
+          secondaryLabel: isAlpha ? 'A' : 'sin⁻¹',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.scientificText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: 'asin(',
         ),
         _KeyConfig(
-          action: isShift ? 'acos(' : 'cos(',
-          primaryLabel: isShift ? 'cos⁻¹' : 'cos',
-          secondaryLabel: 'cos⁻¹',
+          action: isAlpha || isSto || isRcl
+              ? 'B'
+              : (isShift ? 'acos(' : 'cos('),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'B'
+              : (isShift ? 'cos⁻¹' : 'cos'),
+          secondaryLabel: isAlpha ? 'B' : 'cos⁻¹',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.scientificText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: 'acos(',
         ),
         _KeyConfig(
-          action: isShift ? 'atan(' : 'tan(',
-          primaryLabel: isShift ? 'tan⁻¹' : 'tan',
-          secondaryLabel: 'tan⁻¹',
+          action: isAlpha || isSto || isRcl
+              ? 'C'
+              : (isShift ? 'atan(' : 'tan('),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'C'
+              : (isShift ? 'tan⁻¹' : 'tan'),
+          secondaryLabel: isAlpha ? 'C' : 'tan⁻¹',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.scientificText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: 'atan(',
         ),
         _KeyConfig(
-          action: isShift ? 'root(' : '^',
-          primaryLabel: isShift ? '∛' : 'xʸ',
-          secondaryLabel: '∛',
+          action: isAlpha || isSto || isRcl
+              ? 'D'
+              : (isShift ? 'root(' : '^'),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'D'
+              : (isShift ? '∛' : 'xʸ'),
+          secondaryLabel: isAlpha ? 'D' : '∛',
           color: CalculatorTheme.keyOperator,
-          textColor: CalculatorTheme.operatorText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.operatorText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: 'root(',
         ),
@@ -110,40 +132,51 @@ class ScientificView extends StatelessWidget {
           haptic: HapticFeedback.mediumImpact,
         ),
       ],
-      // Row 3: Logarithmic, Root & Parentheses Keys
+      // Row 3: Log / X, Ln / Y, Root / STO, Bracket / RCL
       [
         _KeyConfig(
-          action: isShift ? '10^(' : 'log(',
-          primaryLabel: isShift ? '10ˣ' : 'log',
-          secondaryLabel: '10ˣ',
+          action: isAlpha || isSto || isRcl
+              ? 'X'
+              : (isShift ? '10^(' : 'log('),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'X'
+              : (isShift ? '10ˣ' : 'log'),
+          secondaryLabel: isAlpha ? 'X' : '10ˣ',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.scientificText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: '10^(',
         ),
         _KeyConfig(
-          action: isShift ? 'e^(' : 'ln(',
-          primaryLabel: isShift ? 'eˣ' : 'ln',
-          secondaryLabel: 'eˣ',
+          action: isAlpha || isSto || isRcl
+              ? 'Y'
+              : (isShift ? 'e^(' : 'ln('),
+          primaryLabel: isAlpha || isSto || isRcl
+              ? 'Y'
+              : (isShift ? 'eˣ' : 'ln'),
+          secondaryLabel: isAlpha ? 'Y' : 'eˣ',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isAlpha || isSto || isRcl ? Colors.cyanAccent : CalculatorTheme.scientificText,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: 'e^(',
         ),
         _KeyConfig(
-          action: isShift ? '²' : '√(',
-          primaryLabel: isShift ? 'x²' : '√',
-          secondaryLabel: 'x²',
+          action: isShift ? 'STO' : '√(',
+          primaryLabel: isShift ? 'STO' : '√',
+          secondaryLabel: 'STO',
           color: CalculatorTheme.keyScientific,
-          textColor: CalculatorTheme.scientificText,
+          textColor: isShift ? Colors.greenAccent : CalculatorTheme.scientificText,
+          isGlow: isSto,
           haptic: HapticFeedback.lightImpact,
           swipeUpAction: '²',
         ),
         _KeyConfig(
-          action: '(',
-          primaryLabel: '(',
+          action: isShift ? 'RCL' : '(',
+          primaryLabel: isShift ? 'RCL' : '(',
+          secondaryLabel: 'RCL',
           color: CalculatorTheme.keyOperator,
-          textColor: CalculatorTheme.operatorText,
+          textColor: isShift ? Colors.purpleAccent : CalculatorTheme.operatorText,
+          isGlow: isRcl,
           haptic: HapticFeedback.lightImpact,
         ),
         _KeyConfig(
@@ -192,7 +225,7 @@ class ScientificView extends StatelessWidget {
           haptic: HapticFeedback.lightImpact,
         ),
       ],
-      // Row 5: Numbers 4-6, Multiplication & Euler Constant
+      // Row 5: Numbers 4-6, Multiplication & Euler
       [
         _KeyConfig(
           action: '4',
@@ -230,7 +263,7 @@ class ScientificView extends StatelessWidget {
           haptic: HapticFeedback.lightImpact,
         ),
       ],
-      // Row 6: Numbers 1-3, Subtraction & Answer Memory
+      // Row 6: Numbers 1-3, Subtraction & Ans Memory
       [
         _KeyConfig(
           action: '1',
@@ -353,7 +386,7 @@ class ScientificView extends StatelessWidget {
                   child: Text(
                     config.secondaryLabel!,
                     style: TextStyle(
-                      color: isShift
+                      color: isShift || isAlpha || isSto || isRcl
                           ? CalculatorTheme.scientificAltText
                           : CalculatorTheme.scientificAltText.withValues(alpha: 0.65),
                       fontSize: 10,

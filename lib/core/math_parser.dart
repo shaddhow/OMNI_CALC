@@ -4,7 +4,12 @@ import 'package:math_expressions/math_expressions.dart';
 enum AngleUnit { deg, rad }
 
 class MathParser {
-  static String evaluate(String expressionStr, AngleUnit angleUnit, {double? ans}) {
+  static String evaluate(
+    String expressionStr,
+    AngleUnit angleUnit, {
+    double? ans,
+    Map<String, double>? registers,
+  }) {
     if (expressionStr.trim().isEmpty) return '';
 
     try {
@@ -12,12 +17,26 @@ class MathParser {
           .replaceAll('×', '*')
           .replaceAll('÷', '/')
           .replaceAll('π', 'pi')
-          .replaceAll('e', 'e')
-          .replaceAll('Ans', ans != null ? ans.toString() : '0')
           .replaceAll('√(', 'sqrt(')
           .replaceAll('∛(', 'cbrt(')
           .replaceAll('log(', 'log10(')
           .replaceAll('ln(', 'ln(');
+
+      // Replace memory registers & Ans
+      final double ansVal = ans ?? registers?['Ans'] ?? 0.0;
+      processed = processed.replaceAll('Ans', ansVal.toString());
+
+      if (registers != null) {
+        for (final entry in registers.entries) {
+          if (entry.key != 'Ans') {
+            // Replace standalone register letters A, B, C, D, X, Y
+            processed = processed.replaceAllMapped(
+              RegExp(r'\b' + entry.key + r'\b'),
+              (_) => entry.value.toString(),
+            );
+          }
+        }
+      }
 
       processed = _addImplicitMultiplication(processed);
       processed = _handleTrigFunctions(processed, angleUnit);
@@ -54,12 +73,18 @@ class MathParser {
 
   static String _addImplicitMultiplication(String expr) {
     String result = expr;
+    // 2( -> 2*(, 2pi -> 2*pi, 2sin -> 2*sin, 2x -> 2*x
     result = result.replaceAllMapped(RegExp(r'(\d)(\()'), (m) => '${m[1]}*${m[2]}');
-    result = result.replaceAllMapped(RegExp(r'(\d)([a-zA-Z])'), (m) => '${m[1]}*${m[2]}');
+    result = result.replaceAllMapped(RegExp(r'(\d)([a-zA-Zπe])'), (m) => '${m[1]}*${m[2]}');
+    // )( -> )*(
     result = result.replaceAllMapped(RegExp(r'(\))(\()'), (m) => '${m[1]}*${m[2]}');
+    // )\d -> )*\d
     result = result.replaceAllMapped(RegExp(r'(\))(\d)'), (m) => '${m[1]}*${m[2]}');
-    result = result.replaceAllMapped(RegExp(r'(\))([a-zA-Z])'), (m) => '${m[1]}*${m[2]}');
+    // )a -> )*a
+    result = result.replaceAllMapped(RegExp(r'(\))([a-zA-Zπe])'), (m) => '${m[1]}*${m[2]}');
+    // (pi|e)( -> (pi|e)*(
     result = result.replaceAllMapped(RegExp(r'(pi|e)(\()'), (m) => '${m[1]}*${m[2]}');
+    // (pi|e)\d -> (pi|e)*\d
     result = result.replaceAllMapped(RegExp(r'(pi|e)(\d)'), (m) => '${m[1]}*${m[2]}');
     return result;
   }

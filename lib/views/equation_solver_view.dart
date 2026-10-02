@@ -12,15 +12,25 @@ class EquationSolverView extends StatefulWidget {
 }
 
 class _EquationSolverViewState extends State<EquationSolverView> {
-  int _equationType = 0; // 0: Quadratic (ax^2+bx+c=0), 1: Simultaneous 2x2
+  int _equationType = 0; // 0: Quadratic, 1: Simultaneous 2x2, 2: Simultaneous 3x3
 
+  // Row 1
   final TextEditingController _aCtrl = TextEditingController(text: '1');
   final TextEditingController _bCtrl = TextEditingController(text: '-3');
   final TextEditingController _cCtrl = TextEditingController(text: '2');
+  final TextEditingController _dCtrl = TextEditingController(text: '0');
 
+  // Row 2
   final TextEditingController _a2Ctrl = TextEditingController(text: '1');
   final TextEditingController _b2Ctrl = TextEditingController(text: '1');
   final TextEditingController _c2Ctrl = TextEditingController(text: '5');
+  final TextEditingController _d2Ctrl = TextEditingController(text: '0');
+
+  // Row 3
+  final TextEditingController _a3Ctrl = TextEditingController(text: '2');
+  final TextEditingController _b3Ctrl = TextEditingController(text: '-1');
+  final TextEditingController _c3Ctrl = TextEditingController(text: '1');
+  final TextEditingController _d3Ctrl = TextEditingController(text: '3');
 
   List<String> _solutions = [];
 
@@ -33,7 +43,7 @@ class _EquationSolverViewState extends State<EquationSolverView> {
           double b = double.parse(_bCtrl.text);
           double c = double.parse(_cCtrl.text);
           _solutions = EquationModel.solveQuadratic(a, b, c);
-        } else {
+        } else if (_equationType == 1) {
           double a1 = double.parse(_aCtrl.text);
           double b1 = double.parse(_bCtrl.text);
           double c1 = double.parse(_cCtrl.text);
@@ -41,6 +51,27 @@ class _EquationSolverViewState extends State<EquationSolverView> {
           double b2 = double.parse(_b2Ctrl.text);
           double c2 = double.parse(_c2Ctrl.text);
           _solutions = EquationModel.solveSimultaneous2x2(a1, b1, c1, a2, b2, c2);
+        } else {
+          double a1 = double.parse(_aCtrl.text);
+          double b1 = double.parse(_bCtrl.text);
+          double c1 = double.parse(_cCtrl.text);
+          double d1 = double.parse(_dCtrl.text);
+
+          double a2 = double.parse(_a2Ctrl.text);
+          double b2 = double.parse(_b2Ctrl.text);
+          double c2 = double.parse(_c2Ctrl.text);
+          double d2 = double.parse(_d2Ctrl.text);
+
+          double a3 = double.parse(_a3Ctrl.text);
+          double b3 = double.parse(_b3Ctrl.text);
+          double c3 = double.parse(_c3Ctrl.text);
+          double d3 = double.parse(_d3Ctrl.text);
+
+          _solutions = EquationModel.solveSimultaneous3x3(
+            a1, b1, c1, d1,
+            a2, b2, c2, d2,
+            a3, b3, c3, d3,
+          );
         }
       } catch (e) {
         _solutions = ['Invalid Input Error'];
@@ -55,17 +86,21 @@ class _EquationSolverViewState extends State<EquationSolverView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Selector Chips
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(child: _buildChoiceChip('Quadratic (ax²+bx+c=0)', 0)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildChoiceChip('Simultaneous 2×2', 1)),
+              Expanded(child: _buildChoiceChip('Quadratic', 0)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildChoiceChip('Linear 2×2', 1)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildChoiceChip('Linear 3×3', 2)),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // Inputs
           if (_equationType == 0) ...[
-            const Text('Enter Coefficients (a, b, c):', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
+            const Text('Quadratic Equation: ax² + bx + c = 0', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -76,8 +111,8 @@ class _EquationSolverViewState extends State<EquationSolverView> {
                 Expanded(child: _buildTextField(_cCtrl, 'c')),
               ],
             ),
-          ] else ...[
-            const Text('Equation 1: a₁x + b₁y = c₁', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
+          ] else if (_equationType == 1) ...[
+            const Text('Linear 2×2 System: a₁x + b₁y = c₁', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -88,7 +123,7 @@ class _EquationSolverViewState extends State<EquationSolverView> {
                 Expanded(child: _buildTextField(_cCtrl, 'c₁')),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             const Text('Equation 2: a₂x + b₂y = c₂', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
             const SizedBox(height: 8),
             Row(
@@ -100,8 +135,51 @@ class _EquationSolverViewState extends State<EquationSolverView> {
                 Expanded(child: _buildTextField(_c2Ctrl, 'c₂')),
               ],
             ),
+          ] else ...[
+            const Text('Linear 3×3 System: a₁x + b₁y + c₁z = d₁', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildTextField(_aCtrl, 'a₁')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_bCtrl, 'b₁')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_cCtrl, 'c₁')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_dCtrl, 'd₁')),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text('Equation 2: a₂x + b₂y + c₂z = d₂', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildTextField(_a2Ctrl, 'a₂')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_b2Ctrl, 'b₂')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_c2Ctrl, 'c₂')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_d2Ctrl, 'd₂')),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text('Equation 3: a₃x + b₃y + c₃z = d₃', style: TextStyle(fontWeight: FontWeight.bold, color: CalculatorTheme.scientificText)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildTextField(_a3Ctrl, 'a₃')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_b3Ctrl, 'b₃')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_c3Ctrl, 'c₃')),
+                const SizedBox(width: 6),
+                Expanded(child: _buildTextField(_d3Ctrl, 'd₃')),
+              ],
+            ),
           ],
-          const SizedBox(height: 28),
+
+          const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: CalculatorTheme.equalsGradient),
@@ -125,7 +203,7 @@ class _EquationSolverViewState extends State<EquationSolverView> {
               child: const Text('SOLVE EQUATION', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           const Text('Solutions:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CalculatorTheme.textMuted)),
           const SizedBox(height: 12),
           ClipRRect(
@@ -168,7 +246,7 @@ class _EquationSolverViewState extends State<EquationSolverView> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
           color: selected ? CalculatorTheme.keyScientific : CalculatorTheme.glassSurface,
           borderRadius: BorderRadius.circular(14),
@@ -196,7 +274,7 @@ class _EquationSolverViewState extends State<EquationSolverView> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: CalculatorTheme.textMuted),
+        labelStyle: const TextStyle(color: CalculatorTheme.textMuted, fontSize: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -208,8 +286,9 @@ class _EquationSolverViewState extends State<EquationSolverView> {
         ),
         filled: true,
         fillColor: CalculatorTheme.keyBase,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       ),
-      style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+      style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 14),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../core/calculator_theme.dart';
 import '../core/math_parser.dart';
 import '../models/calculator_mode.dart';
+import '../services/storage_service.dart';
 import 'display.dart';
 import 'scientific_view.dart';
 import 'equation_solver_view.dart';
@@ -25,20 +26,50 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
   final bool _isHyp = false;
   bool _isShift = false;
   bool _isAlpha = false;
+  bool _isSto = false;
+  bool _isRcl = false;
   double? _lastAns;
 
-  final List<String> _historyTape = [];
-  final List<String> _historyLog = [];
-  final List<String> _savedFormulas = [
-    'sin(30) + cos(60)',
-    'sqrt(3^2 + 4^2)',
-    'log(100) * ln(e)',
-  ];
+  Map<String, double> _memoryRegisters = {
+    'A': 0.0,
+    'B': 0.0,
+    'C': 0.0,
+    'D': 0.0,
+    'X': 0.0,
+    'Y': 0.0,
+    'Ans': 0.0,
+  };
+
+  List<String> _historyTape = [];
+  List<String> _historyLog = [];
+  List<String> _savedFormulas = [];
   final List<String> _undoStack = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedData();
+  }
+
+  Future<void> _loadPersistedData() async {
+    final history = await StorageService.loadHistory();
+    final formulas = await StorageService.loadSavedFormulas();
+    final registers = await StorageService.loadRegisters();
+    final angleUnitStr = await StorageService.loadAngleUnit();
+
+    setState(() {
+      _historyLog = history;
+      _historyTape = List.from(history.take(5));
+      _savedFormulas = formulas;
+      _memoryRegisters = registers;
+      _angleUnit = angleUnitStr == 'rad' ? AngleUnit.rad : AngleUnit.deg;
+      _lastAns = registers['Ans'];
+    });
+  }
 
   void _pushUndo() {
     _undoStack.add(_expression);
-    if (_undoStack.length > 20) _undoStack.removeAt(0);
+    if (_undoStack.length > 25) _undoStack.removeAt(0);
   }
 
   void _undo() {
@@ -47,41 +78,107 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
       setState(() {
         _expression = _undoStack.removeLast();
       });
+    } else if (_expression.isNotEmpty) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _expression = _expression.substring(0, _expression.length - 1);
+      });
     }
   }
 
   void _onButtonPressed(String label) {
-    if (label != 'SHIFT' && label != 'ALPHA' && label != 'DEG/RAD') {
+    if (label != 'SHIFT' && label != 'ALPHA' && label != 'DEG/RAD' && label != 'STO' && label != 'RCL') {
       _pushUndo();
+    }
+
+    // Handle STO mode
+    if (_isSto) {
+      if (['A', 'B', 'C', 'D', 'X', 'Y'].contains(label)) {
+        double valToStore = 0.0;
+        if (_result.isNotEmpty && !_result.contains('Error')) {
+          valToStore = double.tryParse(_result) ?? 0.0;
+        } else if (_expression.isNotEmpty) {
+          final eval = MathParser.evaluate(_expression, _angleUnit, ans: _lastAns, registers: _memoryRegisters);
+          valToStore = double.tryParse(eval) ?? 0.0;
+        }
+        setState(() {
+          _memoryRegisters[label] = valToStore;
+          _isSto = false;
+          _isShift = false;
+        });
+        StorageService.saveRegisters(_memoryRegisters);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Stored ${valToStore.toStringAsFixed(4)} in variable $label'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Handle RCL mode
+    if (_isRcl) {
+      if (['A', 'B', 'C', 'D', 'X', 'Y'].contains(label)) {
+        double val = _memoryRegisters[label] ?? 0.0;
+        setState(() {
+          _expression += val == val.toInt() ? val.toInt().toString() : val.toString();
+          _isRcl = false;
+          _isShift = false;
+        });
+        return;
+      }
     }
 
     setState(() {
       if (label == 'AC') {
         _expression = '';
         _result = '';
+        _isShift = false;
+        _isAlpha = false;
+        _isSto = false;
+        _isRcl = false;
       } else if (label == 'DEL') {
         if (_expression.isNotEmpty) {
           _expression = _expression.substring(0, _expression.length - 1);
         }
       } else if (label == '=') {
         if (_expression.isNotEmpty) {
-          _result = MathParser.evaluate(_expression, _angleUnit, ans: _lastAns);
+          _result = MathParser.evaluate(
+            _expression,
+            _angleUnit,
+            ans: _lastAns,
+            registers: _memoryRegisters,
+          );
           if (!_result.contains('Error')) {
             double? parsedVal = double.tryParse(_result);
             if (parsedVal != null) {
               _lastAns = parsedVal;
+              _memoryRegisters['Ans'] = parsedVal;
+              StorageService.saveRegisters(_memoryRegisters);
             }
-            _historyTape.insert(0, '$_expression = $_result');
-            _historyLog.insert(0, '$_expression = $_result');
+            final entry = '$_expression = $_result';
+            _historyTape.insert(0, entry);
+            _historyLog.insert(0, entry);
             if (_historyTape.length > 5) _historyTape.removeLast();
+            StorageService.saveHistory(_historyLog);
           }
         }
       } else if (label == 'DEG/RAD') {
         _angleUnit = _angleUnit == AngleUnit.deg ? AngleUnit.rad : AngleUnit.deg;
+        StorageService.saveAngleUnit(_angleUnit == AngleUnit.rad ? 'rad' : 'deg');
       } else if (label == 'SHIFT') {
         _isShift = !_isShift;
+        _isAlpha = false;
       } else if (label == 'ALPHA') {
         _isAlpha = !_isAlpha;
+        _isShift = false;
+      } else if (label == 'STO') {
+        _isSto = !_isSto;
+        _isRcl = false;
+      } else if (label == 'RCL') {
+        _isRcl = !_isRcl;
+        _isSto = false;
       } else if (label == 'MODE') {
         showModalBottomSheet(
           context: context,
@@ -95,6 +192,8 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
         } else {
           _expression += label;
         }
+        _isShift = false;
+        _isAlpha = false;
       }
     });
   }
@@ -106,16 +205,24 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FractionallySizedBox(
-        heightFactor: 0.75,
+        heightFactor: 0.80,
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: HistorySavedView(
             history: _historyLog,
             savedFormulas: _savedFormulas,
+            memoryRegisters: _memoryRegisters,
             onSelectFormula: (formula) {
               setState(() {
                 _expression = formula;
               });
+            },
+            onClearHistory: () {
+              setState(() {
+                _historyLog.clear();
+                _historyTape.clear();
+              });
+              StorageService.saveHistory([]);
             },
           ),
         ),
@@ -236,17 +343,21 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
                     ],
                   ),
                 ),
-                // Calculator Display Panel
+                // Calculator Display Panel with dynamic mode glow
                 CalculatorDisplay(
                   expression: _expression,
                   result: _result,
                   angleUnit: _angleUnit,
                   isHyp: _isHyp,
+                  isShift: _isShift,
+                  isAlpha: _isAlpha,
+                  isSto: _isSto,
+                  isRcl: _isRcl,
                   historyTape: _historyTape,
                   onSwipeRight: _openHistoryModal,
                   onSwipeLeft: _undo,
                 ),
-                // Main Content View (Scientific Grid / Equation Solver / Matrix View)
+                // Main Content View
                 Expanded(
                   child: _buildCurrentView(),
                 ),
@@ -315,6 +426,9 @@ class _MainCalculatorViewState extends State<MainCalculatorView> {
           angleUnit: _angleUnit,
           isShift: _isShift,
           isAlpha: _isAlpha,
+          isSto: _isSto,
+          isRcl: _isRcl,
+          memoryRegisters: _memoryRegisters,
           onButtonPressed: _onButtonPressed,
         );
       case CalculatorMode.equationSolver:

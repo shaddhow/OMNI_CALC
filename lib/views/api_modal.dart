@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../core/calculator_theme.dart';
 
 class ApiModal extends StatelessWidget {
@@ -13,6 +15,8 @@ class ApiModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String latexStr = r'$$\int ' + (expression.isEmpty ? 'f(x)' : expression) + r' dx = ' + (result.isEmpty ? 'C' : result) + r'$$';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -31,7 +35,7 @@ class ApiModal extends StatelessWidget {
                   Icon(Icons.hub, color: CalculatorTheme.scientificText),
                   SizedBox(width: 8),
                   Text(
-                    'Wolfram Alpha & Math API',
+                    'Wolfram Alpha & LaTeX Export',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ],
@@ -56,8 +60,8 @@ class ApiModal extends StatelessWidget {
                 const Text('LaTeX Rendered Representation:', style: TextStyle(color: CalculatorTheme.textMuted, fontSize: 12)),
                 const SizedBox(height: 8),
                 Text(
-                  r'$$\int ' + (expression.isEmpty ? 'f(x)' : expression) + r' dx = ' + (result.isEmpty ? 'C' : result) + r'$$',
-                  style: const TextStyle(color: CalculatorTheme.scientificText, fontSize: 18, fontFamily: 'serif'),
+                  latexStr,
+                  style: const TextStyle(color: CalculatorTheme.scientificText, fontSize: 17, fontFamily: 'serif'),
                 ),
               ],
             ),
@@ -72,10 +76,12 @@ class ApiModal extends StatelessWidget {
               side: const BorderSide(color: CalculatorTheme.glassBorder),
             ),
             icon: const Icon(Icons.share_rounded),
-            label: const Text('Share Formatted PNG / LaTeX Card'),
+            label: const Text('Share Formatted LaTeX Card / Text'),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('LaTeX formatted image card copied to clipboard & ready to share!')),
+              Clipboard.setData(ClipboardData(text: latexStr));
+              Share.share(
+                'OMNI_CALC LaTeX Output:\n\n$latexStr\n\nEvaluated: $expression = $result',
+                subject: 'OMNI_CALC Math Export',
               );
               Navigator.of(context).pop();
             },
